@@ -1,0 +1,11 @@
+{
+  "name": "file-upload-js",
+  "authors": [
+    "xemlock <xemlock@gmail.com>"
+  ],
+  "license": "MIT",
+  "main": "./FileUpload.js",
+  "dependencies": {
+    "jquery": ">=1.6"
+  }
+}
