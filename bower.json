@@ -5,6 +5,11 @@
   ],
   "license": "MIT",
   "main": "./FileUpload.js",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components"
+  ],
   "dependencies": {
     "jquery": ">=1.6"
   }
