@@ -89,10 +89,15 @@ EventEmitter.prototype = {
 }; // }}}
 
 /**
- * @namespace
- * @version 2013-12-20
+ * @version 2015-12-24
  */
-var FileUpload = {};
+var FileUpload = function (fileInput, url, options) {
+    try {
+        return new FileUpload.XHRUpload(fileInput.files[0], url, options);
+    } catch (e) {
+    }
+    return new FileUpload.FileInputUpload(fileInput, url, options);
+};
 
 /**
  * @constructor
@@ -134,7 +139,7 @@ FileUpload.FileInputUpload = function (fileInput, url, options) { // {{{
     this.url = url || options.url;
     this.data = options.data;
 
-    this.size = '', // file size is not available
+    this.size = ''; // file size is not available
     this.name = (function (value) {
         var name = String(value).replace(/\\/g, '/'),
             pos = name.lastIndexOf('/'); // C:\fakepath\...
@@ -160,7 +165,7 @@ FileUpload.FileInputUpload = function (fileInput, url, options) { // {{{
         }
     }; // }}}
 
-    this.run = function () { // {{{
+    this.send = function () { // {{{
         var frameName;
 
         if (self.isAborted) {
@@ -192,7 +197,8 @@ FileUpload.FileInputUpload = function (fileInput, url, options) { // {{{
                                 .replace(/&amp;/g, '&');
                         }
 
-                        self.emit('complete', response);
+                        self.emit('success', response);
+                        self.emit('complete');
                     }
 
                     // Remove IFRAME and FORM elements. Use a separate thread,
@@ -210,6 +216,7 @@ FileUpload.FileInputUpload = function (fileInput, url, options) { // {{{
                         self.emit('error');
                     }
 
+                    self.emit('complete');
                     setTimeout(_cleanup, 10);
                 };
             });
@@ -302,7 +309,7 @@ FileUpload.XHRUpload = function (file, url, options) { // {{{
         }
     }; // }}}
 
-    this.run = function () { // {{{
+    this.send = function () { // {{{
         var data;
 
         if (self.isAborted) {
@@ -335,12 +342,14 @@ FileUpload.XHRUpload = function (file, url, options) { // {{{
         // Source: https://groups.google.com/forum/?fromgroups=#!topic/mozilla.dev.tech.xml/dCV-F7ZuaOg
         xhr.onreadystatechange = function () {
             if (this.readyState == 4 && !self.isAborted) {
-                self.emit('complete', this.responseText);
+                self.emit('success', this.responseText);
+                self.emit('complete');
             }
         };
 
         xhr.onerror = function () {
             self.emit('error');
+            self.emit('complete');
         };
 
         if (xhr.upload) {
