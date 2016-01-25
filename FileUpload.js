@@ -178,26 +178,24 @@ FileUpload.FileInputUpload = function (fileInput, url, options) { // {{{
             .css('display', 'none')
             .appendTo('body')
             .each(function() {
-                this.onload = function () {
+                var iframeElement = this;
+
+                function onload() {
                     // make sure onload() is called at most once
-                    this.onload = null;
+                    iframeElement.onload = null;
 
                     if (!self.isAborted) {
-                        var body = this.contentWindow.document.body,
-                            response = body.innerHTML.replace(/^\s+|\s+$/g, '');
+                        var doc = iframeElement.contentDocument || iframeElement.contentWindow.document;
+                        var body = doc.body;
 
-                        // IFRAME is expecting an HTML document. If response has
-                        // non-text/html MIME Firefox and Chrome will wrap it in
-                        // a PRE tag (the latter adds a style attribute)
-                        if (response.substr(0, 5).match(/<pre[\s>]/i)) {
-                            response = response
-                                .replace(/^<pre[^>]*>|<\/pre>$/ig, '')
-                                .replace(/&lt;/g, '<')
-                                .replace(/&gt;/g, '>')
-                                .replace(/&amp;/g, '&');
+                        // in Opera the iframe DOM is not always traversable when the
+                        // onload callback fires
+                        if (window.opera && (!body || body.innerHTML === '')) {
+                            setTimeout(onload, 250);
+                            return;
                         }
 
-                        self.emit('success', response);
+                        self.emit('success', body.textContent || body.innerText);
                         self.emit('complete');
                     }
 
@@ -207,6 +205,8 @@ FileUpload.FileInputUpload = function (fileInput, url, options) { // {{{
                     // throws an 0x80004002 (NS_NOINTERFACE) error.
                     setTimeout(_cleanup, 10);
                 };
+
+                this.onload = onload;
 
                 this.onerror = function () {
                     // make sure onerror() is called at most once
@@ -277,7 +277,7 @@ FileUpload.XHRUpload = function (file, url, options) { // {{{
         xhr;
 
     if (!(window.FileList && window.FormData)) {
-        throw 'Your browser does not support HTML5 file upload features';
+        throw new Error('Your browser does not support HTML5 file upload features');
     }
 
     if (typeof url === 'object') {
@@ -318,7 +318,7 @@ FileUpload.XHRUpload = function (file, url, options) { // {{{
 
         // do not send empty files or folders
         if (file.size === 0) {
-            throw 'An empty file cannot be uploaded';
+            throw new Error('An empty file cannot be uploaded');
         }
 
         data = new FormData();
@@ -720,7 +720,7 @@ FileUpload.LegacyUploader = function (selector, options) { // {{{
 
 FileUpload.Uploader = function (selector, options) { // {{{
     if (!(window.FileList && window.FormData)) {
-        throw 'Your browser does not support HTML5 file upload features';
+        throw new Error('Your browser does not support HTML5 file upload features');
     }
 
     var self = this,
